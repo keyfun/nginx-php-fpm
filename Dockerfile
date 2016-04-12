@@ -1,4 +1,4 @@
-FROM ubuntu:14.04.2
+FROM ubuntu:14.04.4
 MAINTAINER Ric Harvey <ric@ngineered.co.uk>
 
 # Surpress Upstart errors/warning
@@ -17,7 +17,7 @@ nginx=stable && \
 add-apt-repository ppa:nginx/$nginx && \
 apt-get update && \
 apt-get upgrade -y && \
-BUILD_PACKAGES="supervisor nginx php5-fpm git php5-mysql php-apc php5-curl php5-gd php5-intl php5-mcrypt php5-memcache php5-sqlite php5-tidy php5-xmlrpc php5-xsl php5-pgsql php5-mongo pwgen" && \
+BUILD_PACKAGES="supervisor nginx php5-fpm git php5-mysql php-apc php5-curl php5-gd php5-intl php5-mcrypt php5-memcache php5-sqlite php5-tidy php5-xmlrpc php5-xsl php5-pgsql php5-mongo php5-ldap pwgen" && \
 apt-get -y install $BUILD_PACKAGES && \
 apt-get remove --purge -y software-properties-common && \
 apt-get autoremove -y && \
@@ -50,30 +50,33 @@ sed -i -e "s/pm.max_requests = 500/pm.max_requests = 200/g" /etc/php5/fpm/pool.d
 RUN sed -i -e "s/;listen.mode = 0660/listen.mode = 0750/g" /etc/php5/fpm/pool.d/www.conf && \
 find /etc/php5/cli/conf.d/ -name "*.ini" -exec sed -i -re 's/^(\s*)#(.*)/\1;\2/g' {} \;
 
+# mycrypt conf
+RUN php5enmod mcrypt
+
 # nginx site conf
 RUN rm -Rf /etc/nginx/conf.d/* && \
 rm -Rf /etc/nginx/sites-available/default && \
 mkdir -p /etc/nginx/ssl/
-ADD ./nginx-site.conf /etc/nginx/sites-available/default.conf
+ADD conf/nginx-site.conf /etc/nginx/sites-available/default.conf
 RUN ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
 
 # Add git commands to allow container updating
-ADD ./pull /usr/bin/pull
-ADD ./push /usr/bin/push
+ADD scripts/pull /usr/bin/pull
+ADD scripts/push /usr/bin/push
 RUN chmod 755 /usr/bin/pull && chmod 755 /usr/bin/push
 
 # Supervisor Config
-ADD ./supervisord.conf /etc/supervisord.conf
+ADD conf/supervisord.conf /etc/supervisord.conf
 
 # Start Supervisord
-ADD ./start.sh /start.sh
+ADD scripts/start.sh /start.sh
 RUN chmod 755 /start.sh
 
 # Setup Volume
 VOLUME ["/usr/share/nginx/html"]
 
 # add test PHP file
-ADD ./index.php /usr/share/nginx/html/index.php
+ADD src/index.php /usr/share/nginx/html/index.php
 RUN chown -Rf www-data.www-data /usr/share/nginx/html/
 
 # Expose Ports
