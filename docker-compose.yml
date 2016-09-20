@@ -1,0 +1,21 @@
+wordpress:
+  image: wordpress
+  links:
+    - db:mysql
+  ports:
+    - 8081:80
+
+db:
+  image: mariadb
+  environment:
+    MYSQL_ROOT_PASSWORD: Abcd1234
+
+phpmyadmin:
+  image: phpmyadmin/phpmyadmin
+  links:
+    - mariadb:mysql
+  ports:
+    - 8080:80
+  environment:
+    MYSQL_USERNAME: root
+    MYSQL_ROOT_PASSWORD: Abcd1234
